@@ -4,7 +4,7 @@ var linkcolor = {'default':
                   .range(["#0a3", "orange", "red"]),
                  'wifi':
                   d3.scale.linear()
-                  .domain([1, 3, 10])
+                  .domain([1, 0.5, 0.1])
                   .range(["#0a3", "orange", "red"]),
                 }
 
