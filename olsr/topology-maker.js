@@ -4,7 +4,7 @@ var fs = require('fs');
 var ip_calc = require("./ip_address.js");
 
 
-var startingNode = "10.150.3.13";
+var startingNode = "10.150.0.1";
 var vpnNetworks = [ "10.150.0.0/24" ];
 
 function getUrl(host, param) {
@@ -14,16 +14,23 @@ function getUrl(host, param) {
 function getLinks(host) { return getUrl(host, "links"); }
 
 function OlsrNode(ip) {
+  var aliases = [];
+  for(var alias in nodeDB) {
+    if(nodeDB[alias] === ip)
+      aliases.push(nodeDB[alias]);
+  }
+  console.log(aliases);
+
   return { 
-    'name': ip, 
-    "flags": { //TODO: detect type
-      "client": false,
-      "gateway": false,
-      "online": true
+    name: ip, 
+    flags: { //TODO: detect type
+      client: false,
+      gateway: false,
+      online: true
     }, 
-    "geo": null,
-    "macs": "", //TODO sobstitute with MID
-    "id": ip
+    geo: null,
+    macs: aliases.toString(),
+    id: ip
   };
 }
 
@@ -42,9 +49,11 @@ var mapname = "nodes.json";
 var ifDoneDump = function(filename) {
   if(!_.isEmpty(greys)) return;
 
-  fs.writeFile(filename, JSON.stringify(graph), function (err) {
-    if (err) throw err;
-    console.log('It\'s saved!');
+  detectGateways(startingNode, function() {
+    fs.writeFile(filename, JSON.stringify(graph), function (err) {
+      if (err) throw err;
+      console.log('It\'s saved!');
+    });
   });
 }
 
@@ -52,7 +61,7 @@ var graph = {
   nodes: [ OlsrNode(startingNode) ], 
   links: [], 
   meta: {
-    timestamp: "2013-05-08T21:08:04"
+    timestamp: (new Date()).toJSON()
   }
 };
 
@@ -145,6 +154,47 @@ var visit = function(node, src_idx) {
 
   req.end();
 };
+
+var detectGateways = function(node, callback) {
+  var hnaReq = http.request(getUrl("10.150.0.1", "hna"), function(res) {
+    console.log("Detecting gateways");
+    res.setEncoding('utf8');
+    var last=""
+    var regex = /\b0\.0\.0\.0\/0\t(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\n?/;
+   
+    res.on('data', function (chunk) {
+      var lines, i;
+
+      lines = (last+chunk).split("\n");
+      for(i = 0; i < lines.length - 1; i++) {
+        var match = regex.exec(lines[i]);
+        if(match != null) {
+          var matchedIp = match[1];
+          var nodeName = getNodeName(matchedIp);
+          var nodeIdx = node_idxs[nodeName];
+          if(graph.nodes[nodeIdx] && graph.nodes[nodeIdx].flags) {
+            graph.nodes[nodeIdx].flags['gateway'] = true;
+          } else {
+            console.log("Errore detect gateway: " +lines[i]);
+            console.log("IP: " + matchedIp + "\n MID: " + nodeName + " idx: " + nodeIdx);
+            console.log("graph: " + graph.nodes[nodeIdx]);
+          }
+        }
+      }
+      last = lines[i];
+    });
+    res.on('end', callback);
+  });
+
+
+  hnaReq.on('error', function(e) {
+    console.log('problem with Gateway detection request: ' + e.message);
+    callback();
+  });
+
+
+  hnaReq.end();
+}
 
 //build MID map
 var midReq = http.request(getUrl(startingNode, "mid"), function(res) {
