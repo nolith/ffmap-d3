@@ -3,7 +3,7 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
     <meta http-equiv="content-type" content="text/html;charset=utf-8">
-    <title>Ninux - Grafo rete</title>
+    <title>Ninux (FI) - Grafo rete</title>
     <link href='style.css' rel='stylesheet' type='text/css' />
     <link href='force.css' rel='stylesheet' type='text/css' />
     <link href='force-big.css' rel='alternate stylesheet' type='text/css' title='big'/>
@@ -12,10 +12,10 @@
   </head>
   <body>
     <header>
-      <h1>luebeck.freifunk.net</h1>
+      <h1>firenze.ninux.org</h1>
       <ul>
         <li><a href="nodes.html">Grafo rete</a></li>
-        <li><a href="geomap.html">Mappa nodi</a></li>
+        <li><a href="http://map.ninux.org/select/Unname">Mappa nodi</a></li> <!-- <a href="geomap.html"> -->
       </ul>
     </header>
     <div id="content">
@@ -58,7 +58,7 @@
               <li><svg width=30 height=20 class="link vpn">
                   <line x1="2" y1="10" x2="28" y2="10"/>
                 </svg>
-                <label>VPN-Link</label>
+                <label>Link VPN</label>
               </li>
               <li><svg width=140 height=25 class="link vpn">
                 <defs>
@@ -69,8 +69,8 @@
                   </linearGradient>
                 </defs>
                   <rect x="18" y="12" width="88" height="6" fill="url(#linkgrad)"/>
-                  <text text-anchor="middle" y=8 x=18>bene</text>
-                  <text text-anchor="middle" y=8 x=106>male</text>
+                  <text text-anchor="middle" y=8 x=18>ottimo</text>
+                  <text text-anchor="middle" y=8 x=106>pessimo</text>
                 </svg>
               </li>
               <li><svg width=30 height=20 class="uplinks">
@@ -83,7 +83,7 @@
                     <text text-anchor="middle" y=-17>ℕ</text>
                   </g>
                 </svg>
-                <label>Anzahl VPN-Links</label>
+                <label>Numero link VPN</label>
               </li>
             </ul>
           </div>
@@ -91,7 +91,7 @@
       </div>
     </div>
     <footer>
-    <a href="http://tcatm.github.com/ffmap-d3/">ffmap-d3</a> — © Nils Schneider</a>
+    <a href="http://github.com/nolith/nnxmap-d3/">nnxmap-d3</a> — © Alessio Caiazza</a> forked from <a href="http://tcatm.github.com/ffmap-d3/">ffmap-d3</a> — © Nils Schneider</a>
     </footer>
     <script>
       var nodes_json = "nodes.json"
