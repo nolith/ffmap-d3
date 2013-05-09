@@ -1,9 +1,11 @@
 var http = require('http');
 var _ = require('underscore');
 var fs = require('fs');
+var ip_calc = require("./ip_address.js");
 
 
-var startingNode= "10.150.3.13";
+var startingNode = "10.150.3.13";
+var vpnNetworks = [ "10.150.0.0/24" ];
 
 function getUrl(host, param) {
   return "http://"+host+":2006/"+param;
@@ -71,7 +73,14 @@ var visit = function(node, src_idx) {
     res.setEncoding('utf8');
     var last=""
     var regex = /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\t(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\t([\d\.]+)\t([\d\.]+)\t([\d\.]+)\t([\d\.]+)\n?/;
-   
+    
+    function detectLinkType(src, dest, linkIp) {
+      //TODO: client?
+      if(_.some(vpnNetworks, function(net) { return ip_calc.matchNetwork(linkIp, net) }))
+        return "vpn";
+      return undefined; //wificlient...
+    }
+
     res.on('data', function (chunk) {
       var lines, i;
 
@@ -102,6 +111,7 @@ var visit = function(node, src_idx) {
           var src = peer[0].id < peer[1].id ? 0 : 1;
           var dst = src === 0 ? 1 : 0;
           var link_id = peer[src].id+"-"+peer[dst].id;
+          var link_type = detectLinkType(peer[src], peer[dst], linkIp);
 
           if(_.find(graph.links, function(l) { return l.id == link_id; }))
             continue;
@@ -111,7 +121,7 @@ var visit = function(node, src_idx) {
             target: peer[dst].idx,
             id: link_id,
             quality: String(peer[src].lq) + ", " + String(peer[dst].lq),
-            type: null //TODO: detect type [null, "vpn", "client"]
+            type: link_type
           });
         }
       }
