@@ -19,7 +19,6 @@ function OlsrNode(ip) {
     if(nodeDB[alias] === ip)
       aliases.push(nodeDB[alias]);
   }
-  console.log(aliases);
 
   return { 
     name: ip, 
