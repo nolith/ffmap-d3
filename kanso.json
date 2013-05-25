@@ -3,7 +3,12 @@
     "version": "0.0.1",
     "description": "Distributed community wireless map",
     "attachments": ["map"],
+    "modules": ["lib"],
     "dependencies": {
-        "attachments": null
-    }
+        "attachments": null,
+        "modules": null,
+        "properties": null,
+        "underscore": null
+    },
+    "load": "lib/app"
 }
