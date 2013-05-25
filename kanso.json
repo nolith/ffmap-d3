@@ -1,0 +1,9 @@
+{
+    "name": "nnxmap",
+    "version": "0.0.1",
+    "description": "Distributed community wireless map",
+    "attachments": ["map"],
+    "dependencies": {
+        "attachments": null
+    }
+}
