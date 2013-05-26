@@ -172,7 +172,7 @@ function show_node(query) {
 
   vis.selectAll(".node")
     .classed("marked", function(d) {
-      return d.macs.indexOf(query.toLowerCase()) >= 0 ||
+      return d.addresses.indexOf(query.toLowerCase()) >= 0 ||
              d.name.toLowerCase().indexOf(query.toLowerCase()) >= 0
     })
 }
@@ -242,7 +242,7 @@ function show_node_info(d) {
 
   nodeinfo.append("p")
           .append("label")
-          .text("macs: " + d.macs)
+          .text("addresses: " + d.addresses)
 
   nodeinfo.append("h2").text("VPN-Links")
 
@@ -254,7 +254,7 @@ function show_node_info(d) {
                   .on("click", goto_node)
                   .attr("href", "#")
                   .text(function(d) {
-                    return d.name || d.macs
+                    return d.name || d.addresses
                   })
 
   nodeinfo.append("p")
@@ -263,10 +263,10 @@ function show_node_info(d) {
 
   nodeinfo.append("p")
           .append("label")
-          .text("WLAN Verbindungen: " + d.wifilinks.length)
+          .text("Collegamenti WLAN: " + d.wifilinks.length)
 
   if (d.geo) {
-    nodeinfo.append("h2").text("Geodaten")
+    nodeinfo.append("h2").text("Coordinate")
 
     nodeinfo.append("p")
             .text(d.geo)

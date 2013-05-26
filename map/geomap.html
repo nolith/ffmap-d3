@@ -26,7 +26,7 @@
     <script type="text/javascript" src="geomap.js"></script>
 
     <script type="text/javascript">
-      var nodes_json = "nodes.json"
+      var nodes_json = "../_list/network/network?start_key=[\"firenze\"]&end_node=[\"firenze\",{}]"
 
       window.onresize = resize
 
@@ -54,12 +54,12 @@
 
   <body onload="resize(); init()">
     <header>
-      <h1>luebeck.freifunk.net</h1>
+      <h1>firenze.ninux.org</h1>
       <ul>
-        <li><a href="nodes.html">Knotengraph</a></li>
-        <li><a href="geomap.html">Knotenkarte</a></li>
+        <li><a href="nodes.html">Grafo rete</a></li>
+        <li><a href="geomap.html">Mappa nodi</a></li>
       </ul>
-      <button id="gpsbutton">Koordinaten beim nächsten Klick anzeigen</button>
+      <button id="gpsbutton">Ottieni coordinate con un click su mappa</button>
     </header>
     <div id="map"></div>
   </body>
