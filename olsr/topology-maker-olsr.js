@@ -15,20 +15,14 @@ var program = require('commander');
 
 program
   .version('0.0.1')
-  .usage('[options] <first_node_ip> [couchdb]')
+  .usage('[options] <community> <first_node_ip> [couchdb]')
   .option('-u, --user <username>', 'couchdb username')
   .option('-p, --pass [password]', 'couchdb password')
   .option('-P, --port <n>', 'txt_plugin port [2006]', parseInt, 2006)
-  // .option('-4, --port4 <n>', 'txt_plugin IPv4 port [2006]', parseInt, 2006)
-  // .option('-6, --port6 <n>', 'txt_plugin IPv6 port [2007]', parseInt, 2007)
   .option('-d, --db <dbname>', 'database name [nnxmap]', String, 'nnxmap')
+  .option('-t, --tag', 'tags reached node with <community>')
   .parse(process.argv);
 
-
-// if(typeof program.port !== 'undefined') {
-//   program.port4 = program.port;
-//   program.port6 = program.port;
-// }
 
 if(program.pass === true) {
   program.password('Password: ', function(pass){
@@ -37,19 +31,41 @@ if(program.pass === true) {
   });
 }
 
-if(program.args.length < 1) {
+if(program.args.length < 2) {
   program.help();
 }
 
+var community = program.args[0];
+var first_node = program.args[1];
+var should_tag = program.tag;
 var db_url = 'http://localhost:5984';
-if(program.args.length > 1)
-  db_url = program.args[1];
+if(program.args.length > 2)
+  db_url = program.args[2];
 
 var couch = nano(db_url);
 var nnxmap = couch.use(program.db);
 
+function tagNodeWithCommunity(node_name, community) {
+  if(typeof node_name === 'undefined')
+    return;
 
-function startVisit(nodes_by_address, firstIP, txt_plugin_port) {
+  nnxmap.get(node_name, function(err, doc) {
+    if(!err) {
+      if(doc.community !== community) {
+        doc.community = community;
+        nnxmap.insert(doc, function(err) {
+          if(err) {
+            console.log("Cannot tag node " + node_name);
+            console.log(err.reason || err);
+          }
+        });
+      }
+    }
+  });
+}
+
+
+function startVisit(nodes_by_address, community, firstIP, txt_plugin_port, tag_with_community_name) {
   var whites = [], greys = [firstIP];
   //MID map data
   var nodeDB = new olsr.MIDMap();
@@ -64,19 +80,21 @@ function startVisit(nodes_by_address, firstIP, txt_plugin_port) {
   function clean_old_links_if_empty() {
     if(_.isEmpty(greys)) {
       console.log("Pruning old links");
-      _.each(oldLinks, function(doc_id, rev) {
-        nnxmap.destroy(doc_id, rev, function(err, body) {
-          if(err) {
-            console.log("Cannot delete old link " + doc_id);
-          }
-        });
+      _.each(oldLinks, function(rev, doc_id) {
+        if(rev) {
+          nnxmap.destroy(doc_id, rev, function(err, body) {
+            if(err) {
+              console.log("Cannot delete old link " + doc_id);
+            }
+          });
+        }
       });
     }
   }
 
   var visit = function(node) {
     var node_name = nodes_by_address[node];
-    console.log("visiting " + node_name + "(" + node + ")");
+    console.log("visiting " + node_name + " (" + node + ")");
 
     var req = http.request(getLinks(node), function(res) {
       if(_.contains(whites, node))
@@ -84,6 +102,9 @@ function startVisit(nodes_by_address, firstIP, txt_plugin_port) {
       whites.push(node);
       var grey_idx = _.indexOf(greys, node);
       greys.splice(grey_idx, 1);
+
+      if(tag_with_community_name)
+        tagNodeWithCommunity(node_name, community);
 
       res.setEncoding('utf8');
       var last=""
@@ -100,6 +121,7 @@ function startVisit(nodes_by_address, firstIP, txt_plugin_port) {
             var localIp = match[1];
             var linkIp = match[2];
             var remoteIP = nodeDB.get(linkIp);
+            var remote_node_name = nodes_by_address[remoteIP];
             var hyst = match[3];
             var lq = match[4];
             var nlq = match[5];
@@ -112,8 +134,10 @@ function startVisit(nodes_by_address, firstIP, txt_plugin_port) {
               visit(remoteIP);
             }
 
-            var link = new olsr.OlsrLink(node, localIp, linkIp, 
-              hyst, lq, nlq, cost, node_name);
+            var link = new olsr.OlsrLink(community, 
+              node_name || node, localIp, 
+              remote_node_name || remoteIP, linkIp, 
+              hyst, lq, nlq, cost);
 
             var old_link_rev = oldLinks[link._id];
             if(old_link_rev) {
@@ -124,7 +148,7 @@ function startVisit(nodes_by_address, firstIP, txt_plugin_port) {
             nnxmap.insert(link, function(err, body) {
               if(err) {
                 console.log("Error uploading " + link._id);
-                console.log(body);
+                console.log(err.reason || err);
               }
             });
           }
@@ -139,7 +163,9 @@ function startVisit(nodes_by_address, firstIP, txt_plugin_port) {
     req.on('error', function(e) {
       var grey_idx = _.indexOf(greys, node);
       greys.splice(grey_idx, 1);
-      console.log('problem with Link request on node ' + node + ': ' + e.message);
+      console.log('problem with Link request on node ' +
+         node_name + ' (' + node + '): ' + e.message);
+      clean_old_links_if_empty();
     });
 
     req.end();
@@ -186,21 +212,28 @@ function startVisit(nodes_by_address, firstIP, txt_plugin_port) {
     hnaReq.end();
   }
 
+  if(tag_with_community_name)
+    console.log("Community tagging enabled");
+
   //fetching old links
-  nnxmap.view('nnxmap', 'links', function(err, body) {
-    if (!err) {
-      _.each(body.rows, function(doc) {
-        //link_id -> link_rev 
-        oldLinks[doc.key[1]] = doc.value;
-      })
-      old_links_ready = true;
-      if(mid_ready)
-        visit(firstIP);
-    }else {
-      console.log("Cannot load links view!");
-      console.log(body);
-      process.exit(2);
-    }
+  nnxmap.view('nnxmap', 'links', 
+    {
+      start_key: JSON.stringify([community]), 
+      end_key: JSON.stringify([community, {}])
+    }, function(err, body) {
+        if (!err) {
+          _.each(body.rows, function(doc) {
+            //link_id -> link_rev 
+            oldLinks[doc.key[2]] = doc.value;
+          })
+          old_links_ready = true;
+          if(mid_ready)
+            visit(firstIP);
+        }else {
+          console.log("Cannot load links view!");
+          console.log(err);
+          process.exit(2);
+        }
   });
 
   //build MID map
@@ -225,6 +258,8 @@ function startVisit(nodes_by_address, firstIP, txt_plugin_port) {
     });
     res.on('end', function() {
       mid_ready = true;
+      //take the primary_ip for the starting node
+      firstIP = nodeDB.get(firstIP);
       if(old_links_ready)
         visit(firstIP);
     });
@@ -248,10 +283,11 @@ nnxmap.view('nnxmap', 'node_by_address', function(err, body) {
       nodes_by_address[doc.key] = doc.value[0];
     });
 
-    startVisit(nodes_by_address, program.args[0], program.port);
+    startVisit(nodes_by_address, community, 
+      first_node, program.port, should_tag);
   }else {
     console.log("Cannot load node_by_address view!");
-    console.log(body);
+    console.log(err.reason || err);
     process.exit(1);
   }
 });
