@@ -112,7 +112,7 @@ function startVisit(nodes_by_address, firstIP, txt_plugin_port) {
               visit(remoteIP);
             }
 
-            var link = new olsr.OlsrLink(localIp, linkIp, 
+            var link = new olsr.OlsrLink(node, localIp, linkIp, 
               hyst, lq, nlq, cost, node_name);
 
             var old_link_rev = oldLinks[link._id];

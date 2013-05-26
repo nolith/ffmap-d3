@@ -1,17 +1,18 @@
 var _ = require('underscore');
 
-var OlsrLink = function(local_ip, remote_ip, hyst, lq, nlq, etx, node) {
+var OlsrLink = function(node_primary_ip, local_ip, remote_ip, hyst, lq, nlq, etx, node) {
   this.type = 'link';
   this.protocol= 'olsr';
+  this.node_primary_ip = node_primary_ip;
   this.local_ip= local_ip;
   this.remote_ip= remote_ip;
   this.hysteresis= hyst;
   this.lq= lq;
   this.nlq= nlq;
   this.etx= etx;
+  this.node = node;
   this._id= "link_"+local_ip+"_"+remote_ip;
   this._rev= undefined;
-  this.node = node;
 };
 
 OlsrLink.prototype.equals = function(o) {
