@@ -92,11 +92,11 @@ function update(data) {
   links_svg.style("stroke", function(d) {
         switch (d.type) {
           case "vpn":
-            return linkcolor['default'](Math.max.apply(null, d.quality.split(",")))
+            return linkcolor['default'](Math.min.apply(null, d.quality.split(",")))
           default:
             var q;
             try {
-              q = Math.max.apply(null, d.quality.split(","))
+              q = Math.min.apply(null, d.quality.split(","))
             } catch(e) {
               q = d.quality
             }
@@ -278,8 +278,9 @@ function position_labels(nodes) {
         else
           name = n.id
 
-        if (n.flags.online)
-          name += " (" + (n.clients.length - 1) + ")"
+        //HACK: no client count with olsr
+        // if (n.flags.online)
+        //   name += " (" + (n.clients.length - 1) + ")"
 
         o.append("text").text(name).attr("y", -i * 15)
       })
@@ -290,7 +291,9 @@ function position_labels(nodes) {
       } catch (e) {
         clients = 0
       }
-      o.append("text").text(d.nodes.length + " Knoten (" + clients + ")").attr("y", 0).style("font-weight", "bold")
+      o.append("text").text(d.nodes.length + " Nodi").attr("y", 0).style("font-weight", "bold")
+      //HACK: no client count with olsr
+      // o.append("text").text(d.nodes.length + " Nodi (" + clients + ")").attr("y", 0).style("font-weight", "bold")
     }
   })
   /*

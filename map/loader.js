@@ -36,6 +36,7 @@ function load_nodes(filename, data, fn) {
 
     // count vpn links
     json.nodes.forEach(function(d) {
+      d.flags.leaf = d.devices.length > 1
       d.vpns = []
       d.wifilinks = []
       d.clients = []

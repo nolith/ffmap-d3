@@ -368,15 +368,18 @@ function reload() {
         nClients = data.nodes.filter(function(d) {
                    return d.flags.client && d.flags.online
                  }).length
+        nLeafs = data.nodes.filter(function(d) {
+                   return d.flags.leaf && d.flags.online
+                 }).length
 
     d3.select("#nodecount")
-      .text(nNodes + " Knoten")
+      .text(nNodes + " Nodi")
 
     d3.select("#gatewaycount")
-      .text(nGateways + " Gateways")
+      .text(nGateways + " Gateway")
 
     d3.select("#clientcount")
-      .text("ungefähr " + (nClients - nNodes) + " Clients")
+      .text(""+(nNodes - nLeafs) + " super nodi")
 
     data = wilder_scheiß(data)
 
@@ -499,11 +502,11 @@ function update() {
       .style("stroke", function(d) {
         switch (d.type) {
           case "vpn":
-            return linkcolor['default'](Math.max.apply(null, d.quality.split(",")))
+            return linkcolor['default'](Math.min.apply(null, d.quality.split(",")))
           default:
             var q;
             try {
-              q = Math.max.apply(null, d.quality.split(","))
+              q = Math.min.apply(null, d.quality.split(","))
             } catch(e) {
               q = d.quality
             }
