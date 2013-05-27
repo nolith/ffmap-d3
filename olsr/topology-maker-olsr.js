@@ -2,7 +2,7 @@
 
 var http = require('http');
 var _ = require('underscore');
-var fs = require('fs');
+var net = require('net');
 var ip_calc = require("./ip_address.js");
 var olsr = require("./olsr.js");
 var nano = require('nano');
@@ -37,6 +37,7 @@ if(program.args.length < 2) {
 
 var community = program.args[0];
 var first_node = program.args[1];
+var ipv6_scan = first_node.indexOf(":") !== -1;
 var should_tag = program.tag;
 var db_url = 'http://localhost:5984';
 if(program.args.length > 2)
@@ -65,7 +66,7 @@ function tagNodeWithCommunity(node_name, community) {
 }
 
 
-function startVisit(nodes_by_address, community, firstIP, txt_plugin_port, tag_with_community_name) {
+function startVisit(nodes_by_address, community, firstIP, txt_plugin_port, tag_with_community_name, ipv6_scan) {
   var whites = [], greys = [firstIP];
   //MID map data
   var nodeDB = new olsr.MIDMap();
@@ -73,6 +74,9 @@ function startVisit(nodes_by_address, community, firstIP, txt_plugin_port, tag_w
   var mid_ready = false, old_links_ready = false;
   //some utility functions
   function getUrl(host, param) {
+    if(host.indexOf(":") !== -1) {
+      host = "[" + host + "]"; //ipv6
+    }
     return "http://"+host+":" + txt_plugin_port + "/"+param;
   }
   function getLinks(host) { return getUrl(host, "links"); }
@@ -108,7 +112,7 @@ function startVisit(nodes_by_address, community, firstIP, txt_plugin_port, tag_w
 
       res.setEncoding('utf8');
       var last=""
-      var regex = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\t(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\t([\d\.]+)\t([\d\.]+)\t([\d\.]+)\t([\d\.]+)\n?/;
+      var regex = /(\b.+\b)\t(\b.+\b)\t([\d\.]+)\t([\d\.]+)\t([\d\.]+)\t([\d\.]+)\n?/;
 
       res.on('data', function (chunk) {
         var lines, i;
@@ -120,6 +124,8 @@ function startVisit(nodes_by_address, community, firstIP, txt_plugin_port, tag_w
           if(match != null) {
             var localIp = match[1];
             var linkIp = match[2];
+            if(net.isIP(localIp) === 0 || net.isIP(linkIp) === 0)
+              continue;
             var remoteIP = nodeDB.get(linkIp);
             var remote_node_name = nodes_by_address[remoteIP];
             var hyst = match[3];
@@ -216,10 +222,11 @@ function startVisit(nodes_by_address, community, firstIP, txt_plugin_port, tag_w
     console.log("Community tagging enabled");
 
   //fetching old links
+  var protocol = "olsr_v" + (ipv6_scan ? "6" : "4");
   nnxmap.view('nnxmap', 'links', 
     {
-      start_key: JSON.stringify([community]), 
-      end_key: JSON.stringify([community, {}])
+      start_key: JSON.stringify([community, protocol]), 
+      end_key: JSON.stringify([community, protocol, {}])
     }, function(err, body) {
         if (!err) {
           _.each(body.rows, function(doc) {
@@ -241,7 +248,7 @@ function startVisit(nodes_by_address, community, firstIP, txt_plugin_port, tag_w
     console.log("building MID");
     res.setEncoding('utf8');
     var last=""
-    var regex = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\t(.*)\n?/;
+    var regex = /(.*)\t(.*)\n?/;
    
     res.on('data', function (chunk) {
       var lines, i;
@@ -251,7 +258,8 @@ function startVisit(nodes_by_address, community, firstIP, txt_plugin_port, tag_w
         var match = regex.exec(lines[i]);
         if(match != null) {
           var nodeIp = match[1];
-          nodeDB.add(nodeIp, match[2].split(";"));
+          if(net.isIP(nodeIp) !== 0)
+            nodeDB.add(nodeIp, match[2].split(";"));
         }
       }
       last = lines[i];
@@ -284,7 +292,7 @@ nnxmap.view('nnxmap', 'node_by_address', function(err, body) {
     });
 
     startVisit(nodes_by_address, community, 
-      first_node, program.port, should_tag);
+      first_node, program.port, should_tag, ipv6_scan);
   }else {
     console.log("Cannot load node_by_address view!");
     console.log(err.reason || err);
