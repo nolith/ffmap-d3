@@ -4,12 +4,23 @@
     "description": "Distributed community wireless map",
     "attachments": ["map"],
     "modules": ["lib"],
+    "dust": {
+        "templates": "templates"
+    },
+    "duality": {
+        "base_template": "base.html"
+    },
     "dependencies": {
         "attachments": null,
         "modules": null,
         "properties": null,
         "underscore": null,
-        "json2": null
+        "json2": null,
+        "settings": null,
+        "duality": null,
+        "dust": null,
+        "duality-dust": null,
+        "couchtypes": null
     },
     "load": "lib/app"
 }
