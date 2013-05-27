@@ -8,7 +8,8 @@
         "attachments": null,
         "modules": null,
         "properties": null,
-        "underscore": null
+        "underscore": null,
+        "json2": null
     },
     "load": "lib/app"
 }
