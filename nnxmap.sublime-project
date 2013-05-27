@@ -1,0 +1,32 @@
+{
+  "folders":
+  [
+    {
+      "path": "."
+    }
+  ],
+ "settings":
+  {
+    "tab_size": 2,
+    "translate_tabs_to_spaces": true
+  },
+  "build_systems":
+  [
+    {
+      "name": "Kanso push",
+      "cmd": ["kanso", "push"],
+      "working_dir": "$project_path",
+      "selector": "source.js"
+    },
+    {
+      "name": "Kanso List",
+      "cmd": ["kanso", "ls"],
+      "working_dir": "$project_path"
+    },
+    {
+      "name": "Kanso Install",
+      "cmd": ["kanso", "install"],
+      "working_dir": "$project_path"
+    }
+  ]
+}

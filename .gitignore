@@ -1,3 +1,5 @@
 *_compiled.js
 nodes.json
 packages/*
+.kansorc
+*.sublime-workspace
